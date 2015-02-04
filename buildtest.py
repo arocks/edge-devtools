@@ -41,16 +41,20 @@ django.setup()
 print("Django configured...")
 
 from django.core import management
+print("Checking apps...")
 management.call_command('check')
-management.call_command('migrate', interactive=False, verbosity=0)
+print("Migrating...")
+management.call_command('migrate', interactive=False, verbosity=2)
 
 # Create superuser
+print("Creating superuser...")
 from django.contrib.auth.models import User
 User.objects.create_superuser(SUPERUSER,
                               SUPERUSER_EMAIL,
                               SUPERUSER_PASSWORD)
 
 # Run tests
+print("Running tests...")
 management.call_command('test', 'profiles', verbosity=0)
 
 # TO REMOVE: Since test cases are already checking this
