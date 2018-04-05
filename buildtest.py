@@ -23,18 +23,24 @@ if os.path.isdir(PROJNAME):
 
 call(["django-admin.py",
       "startproject",
+      "--verbosity=3",
       "--template=../edge",
       "--extension=py,md,html,env",
       PROJNAME])
 print("Project build complete...")
 
-
 import sys
 src_dir = os.path.join(BASE_DIR, PROJNAME, 'src')
 sys.path.insert(0, src_dir)
 os.chdir(src_dir)
+
+print("Copying local.env from sample...")
+shutil.copyfile("{0}/settings/local.sample.env".format(PROJNAME),
+                "{0}/settings/local.env".format(PROJNAME))
+
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE",
-                      "{0}.settings".format(PROJNAME))
+                      "{0}.settings.development".format(PROJNAME))
 
 import django
 django.setup()
@@ -48,22 +54,27 @@ management.call_command('migrate', interactive=False, verbosity=2)
 
 # Create superuser
 print("Creating superuser...")
-from django.contrib.auth.models import User
-User.objects.create_superuser(SUPERUSER,
-                              SUPERUSER_EMAIL,
-                              SUPERUSER_PASSWORD)
+from django.contrib.auth import get_user_model
+User = get_user_model()
+User.objects.create_superuser(email=SUPERUSER_EMAIL, name="Abc",
+                              password=SUPERUSER_PASSWORD)
 
 # Run tests
 print("Running tests...")
 management.call_command('test', 'profiles', verbosity=0)
 
-# TO REMOVE: Since test cases are already checking this
-# Testing web requests
-# from django.test.client import Client
-# client = Client()
-# response = client.get('/')
-# if response.status_code == 200:
-#     print("Opening home page... ok")
-# else:
-#     print("Opening home page... FAILED! {0}".format(
-#             response.status_code))
+# Track changes
+os.chdir("..")                  # Up one level from `src` back to proj root
+print("Setting a git repo...")
+shutil.copyfile("../_gitignore_my_proj", ".gitignore")
+call(["git", "init"])
+call(["git", "add", "."])
+call(["git", "commit", "-q", "-m", "'initial'"])
+print("Git repo created!")
+
+# change to project dir and run server
+os.chdir("src")
+try:
+    call(["python", "-Wd", "manage.py", "runserver"])
+except KeyboardInterrupt:
+    print("\nBUILD TEST FINISHED")
